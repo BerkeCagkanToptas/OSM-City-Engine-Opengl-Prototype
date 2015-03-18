@@ -8,11 +8,6 @@ using namespace std;
 
 coordinate MercatorProjection::LatLontoMeters(double lat, double lon)
 {
-	//double mx, mz;
-	//mx = lon * originShift / 180.0;
-	//mz = log(tan((90 + lat) * PI / 360.0)) / (PI / 180.0);
-	//mz = mz * originShift / 180.0;
-
 	double meterx, meterz;
 
 	meterx = lat * originShift / 180.0f;
@@ -20,7 +15,6 @@ coordinate MercatorProjection::LatLontoMeters(double lat, double lon)
 	meterz = meterz * originShift / 180.0f;
 
 	return coordinate{ meterx, meterz };
-	//return coordinate{ mz, mx };
 }
 
 coordinate MercatorProjection::meterstoLatLon(double mx, double my)
