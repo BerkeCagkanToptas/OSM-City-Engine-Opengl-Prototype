@@ -393,11 +393,39 @@ void sceneGenerator::generate3DRoads()
 		addIntersection1(&parser.highWayList[i]);
 		addIntersection2(&parser.highWayList[i]);
 		addIntersection3(&parser.highWayList[i]);
+		generateTexCoords(&parser.highWayList[i]);
+	}
+}
+
+//19 March Tex Coordinate Generator
+void sceneGenerator::generateTexCoords(HighWay *way)
+{
+	const double TEXSIZE = 4.0f;
+	double roadPos=0.0;
+
+	//Start Point (i = 0)
+	way->leftSideTexCoords.push_back(Tuple(0.0f, 0.0f));
+	//Inter Points (1 <= i <= N)
+	for (int i = 0; i < way->leftSideVertexes.size()-1; i++)
+	{
+		Triple fark = way->leftSideVertexes[i + 1] - way->leftSideVertexes[i];
+		roadPos += fark.Length();
+		way->leftSideTexCoords.push_back(Tuple(0.0f, roadPos/TEXSIZE));
+	}
+
+	roadPos = 0.0;
+	//Start Point (i=0)
+	way->rightSideTexCoords.push_back(Tuple(1.0f, 0.0f));
+	for (int i = 0; i < way->rightSideVertexes.size() - 1; i++)
+	{
+		Triple fark = way->rightSideVertexes[i + 1] - way->rightSideVertexes[i];
+		roadPos += fark.Length();
+		way->rightSideTexCoords.push_back(Tuple(1.0f, roadPos / TEXSIZE));
 	}
 }
 
 
-//18 Mart Helper1 (intersection)
+//[ALL INTERSECTIONS ARE DETECTED AND ADDED TO BUFFER  +%95 Work Correctly]
 void sceneGenerator::addIntersection1(HighWay *way)
 {
 	GLfloat waySize = way->size;
@@ -407,7 +435,13 @@ void sceneGenerator::addIntersection1(HighWay *way)
 	{
 		Tuple pointLeft1 = Tuple(way->leftSideVertexes[i].x, way->leftSideVertexes[i].z);
 		Tuple pointLeft2 = Tuple(way->leftSideVertexes[i+1].x, way->leftSideVertexes[i+1].z);
-		
+
+		Tuple pointRight1 = Tuple(way->rightSideVertexes[i].x, way->rightSideVertexes[i].z);
+		Tuple pointRight2 = Tuple(way->rightSideVertexes[i + 1].x, way->rightSideVertexes[i + 1].z);
+
+		int cnt = 0;
+		int leftiterator = i+1;
+		int rightiterator = i + 1;
 
 		for (int k = terrain.left, z = 0; k <= terrain.right; k++, z++)
 		{
@@ -417,44 +451,80 @@ void sceneGenerator::addIntersection1(HighWay *way)
 
 			//LEFT SIDE INTERSECTION
 			Tuple intersectleft;
-			if (geo.getLineIntersection(&intersectleft, pTop, pBottom, pointLeft1, pointLeft2))
-			{
-				way->leftSideVertexes.insert(way->leftSideVertexes.begin()+i+1,Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				i++;
-			}
-		}
-	}
-
-	for (int i = 0; i < (int)way->rightSideVertexes.size() - 1; i++)
-	{
-
-		Tuple pointRight1 = Tuple(way->rightSideVertexes[i].x, way->rightSideVertexes[i].z);
-		Tuple pointRight2 = Tuple(way->rightSideVertexes[i + 1].x, way->rightSideVertexes[i + 1].z);
-
-		for (int k = terrain.left, z = 0; k <= terrain.right; k++, z++)
-		{
-			//Vertical Terrain Line
-			Tuple pTop(terrain.BBox.meterTop, terrain.BBox.meterLeft + z * terrainLoader.heightMapInfo.sizeZ);
-			Tuple pBottom(terrain.BBox.meterBottom, terrain.BBox.meterLeft + z * terrainLoader.heightMapInfo.sizeZ);
-
-			//RIGHT SIDE INTERSECTION
 			Tuple intersectright;
-			if (geo.getLineIntersection(&intersectright, pTop, pBottom, pointRight1, pointRight2))
+			bool isleft = geo.getLineIntersection(&intersectleft, pTop, pBottom, pointLeft1, pointLeft2);
+			bool isright = geo.getLineIntersection(&intersectright, pTop, pBottom, pointRight1, pointRight2);
+
+			if (isleft && isright)
 			{
-				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + i + 1, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
-				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
-				i++;
+				if (pointLeft1.y - pointLeft2.y < 0)
+				{
+					way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftiterator, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					leftiterator++;
+				}
+				else
+				{
+					way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftiterator, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				}
+
+				if (pointRight1.y - pointRight2.y < 0)
+				{
+					way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightiterator, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					rightiterator++;
+				}
+				else
+				{
+					way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightiterator, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				}
+				cnt++;
 			}
+			else if (isleft)
+			{
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftiterator, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+
+				double ratio = (pointLeft1 - intersectleft).length()/(pointLeft1 - pointLeft2).length();
+				Tuple rightPointnew = pointRight1 + (pointRight2 - pointRight1) * ratio;
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightiterator, Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+				way->rightIntersections.push_back(Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+
+				if (pointLeft1.y - pointLeft2.y < 0)
+				{
+					leftiterator++;
+					rightiterator++;
+				}
+				cnt++;
+			}
+			else if (isright)
+			{
+
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightiterator, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+
+				double ratio = (pointRight1 - intersectright).length() / (pointRight1 - pointRight2).length();
+				Tuple leftPointnew = pointLeft1 + (pointLeft2 - pointLeft1) * ratio;
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftiterator, Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+				way->leftIntersections.push_back(Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+
+				if (pointRight1.y - pointRight2.y < 0)
+				{
+					rightiterator++;
+					leftiterator++;
+				}
+				cnt++;
+			}
+
+
 		}
 
+		i += cnt;
+	
 	}
-
-
-
 }
-
-//18 Mart Helper2 (intersection)
 void sceneGenerator::addIntersection2(HighWay *way)
 {
 	GLfloat waySize = way->size;
@@ -466,29 +536,12 @@ void sceneGenerator::addIntersection2(HighWay *way)
 		//LEFT SIDE
 		Tuple pointLeft1 = Tuple(way->leftSideVertexes[i].x, way->leftSideVertexes[i].z);
 		Tuple pointLeft2 = Tuple(way->leftSideVertexes[i + 1].x, way->leftSideVertexes[i + 1].z);
-
-		for (int k = terrain.bottom, t = 0; k >= terrain.top; k--, t++)
-		{
-			//Horizontal Line
-			Tuple pLeft(terrain.BBox.meterBottom + t * terrainLoader.heightMapInfo.sizeX, terrain.BBox.meterLeft);
-			Tuple pRight(terrain.BBox.meterBottom + t * terrainLoader.heightMapInfo.sizeX, terrain.BBox.meterRight);
-
-			//LEFT SIDE INTERSECTION
-			Tuple intersectleft;
-			if (geo.getLineIntersection(&intersectleft, pLeft, pRight, pointLeft1, pointLeft2))
-			{
-				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + i + 1, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				i++;
-			}
-		}
-	}
-
-	for (int i = 0; i < (int)way->rightSideVertexes.size() - 1; i++)
-	{
 		//RIGHT SIDE
 		Tuple pointRight1 = Tuple(way->rightSideVertexes[i].x, way->rightSideVertexes[i].z);
 		Tuple pointRight2 = Tuple(way->rightSideVertexes[i + 1].x, way->rightSideVertexes[i + 1].z);
+		int cnt = 0;
+		int leftit = i + 1;
+		int rightit = i + 1;
 
 		for (int k = terrain.bottom, t = 0; k >= terrain.top; k--, t++)
 		{
@@ -496,20 +549,80 @@ void sceneGenerator::addIntersection2(HighWay *way)
 			Tuple pLeft(terrain.BBox.meterBottom + t * terrainLoader.heightMapInfo.sizeX, terrain.BBox.meterLeft);
 			Tuple pRight(terrain.BBox.meterBottom + t * terrainLoader.heightMapInfo.sizeX, terrain.BBox.meterRight);
 
-			//RIGHT SIDE INTERSECTION
+			
+			Tuple intersectleft;
 			Tuple intersectright;
-			if (geo.getLineIntersection(&intersectright, pLeft, pRight, pointRight1, pointRight2))
+			bool isleft = geo.getLineIntersection(&intersectleft, pLeft, pRight, pointLeft1, pointLeft2);
+			bool isright = geo.getLineIntersection(&intersectright, pLeft, pRight, pointRight1, pointRight2);
+			if (isleft && isright)
 			{
-				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + i + 1, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
-				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
-				i++;
+
+				if (pointLeft1.x < pointLeft1.x)
+				{
+					way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftit, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					leftit++;
+				}
+				else
+				{
+					way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftit, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+					way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				}
+
+				if (pointRight1.x < pointRight2.x)
+				{
+					way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightit, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					rightit++;
+				}
+				else
+				{
+					way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightit, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+					way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				}
+				cnt++;
 			}
+			else if (isleft)
+			{
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftit, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+
+				double ratio = (pointLeft1 - intersectleft).length() / (pointLeft1 - pointLeft2).length();
+				Tuple rightPointnew = pointRight1 + (pointRight2 - pointRight1) * ratio;
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightit, Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+				way->rightIntersections.push_back(Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+
+				if (pointLeft1.y - pointLeft2.y < 0)
+				{
+					leftit++;
+					rightit++;
+				}
+				cnt++;
+			}
+			else if (isright)
+			{
+
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightit, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+
+				double ratio = (pointRight1 - intersectright).length() / (pointRight1 - pointRight2).length();
+				Tuple leftPointnew = pointLeft1 + (pointLeft2 - pointLeft1) * ratio;
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftit, Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+				way->leftIntersections.push_back(Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+
+				if (pointRight1.y - pointRight2.y < 0)
+				{
+					rightit++;
+					leftit++;
+				}
+				cnt++;
+			}
+
+
 		}
+		i += cnt;
 	}
-
 }
-
-//18 Mart Helper3 (intersection)
 void sceneGenerator::addIntersection3(HighWay *way)
 {
 	GLfloat waySize = way->size;
@@ -522,38 +635,11 @@ void sceneGenerator::addIntersection3(HighWay *way)
 		Tuple pointLeft1 = Tuple(way->leftSideVertexes[i].x, way->leftSideVertexes[i].z);
 		Tuple pointLeft2 = Tuple(way->leftSideVertexes[i + 1].x, way->leftSideVertexes[i + 1].z);
 
-		for (int k = terrain.left, t = 1; k <= terrain.right+(terrain.bottom-terrain.top); k++, t++)
-		{
-			//Diagonal Line
-			Tuple pBottom;
-			Tuple pTop;
-			if (k < terrain.right)
-				pTop = Tuple(terrain.BBox.meterTop, terrain.BBox.meterLeft + t *terrainLoader.heightMapInfo.sizeZ);
-			else
-				pTop = Tuple(terrain.BBox.meterTop - (t - (terrain.right - terrain.left)) * terrainLoader.heightMapInfo.sizeX , terrain.BBox.meterRight);
-
-			if (t <= (terrain.bottom - terrain.top))
-				pBottom = Tuple(terrain.BBox.meterTop - t*terrainLoader.heightMapInfo.sizeX, terrain.BBox.meterLeft);
-			else
-				pBottom = Tuple(terrain.BBox.meterBottom, terrain.BBox.meterLeft + (t - (terrain.bottom - terrain.top)) * terrainLoader.heightMapInfo.sizeZ);
-
-			//LEFT SIDE INTERSECTION
-			Tuple intersectleft;
-			if (geo.getLineIntersection(&intersectleft, pTop, pBottom, pointLeft1, pointLeft2))
-			{
-				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + i + 1, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
-				i++;
-			}
-		}
-	}
-
-	for (int i = 0; i < (int)way->rightSideVertexes.size() - 1; i++)
-	{
-
 		//RIGHT SIDE
 		Tuple pointRight1 = Tuple(way->rightSideVertexes[i].x, way->rightSideVertexes[i].z);
 		Tuple pointRight2 = Tuple(way->rightSideVertexes[i + 1].x, way->rightSideVertexes[i + 1].z);
+
+		int cnt = 0;
 
 		for (int k = terrain.left, t = 1; k <= terrain.right + (terrain.bottom - terrain.top); k++, t++)
 		{
@@ -570,23 +656,53 @@ void sceneGenerator::addIntersection3(HighWay *way)
 			else
 				pBottom = Tuple(terrain.BBox.meterBottom, terrain.BBox.meterLeft + (t - (terrain.bottom - terrain.top)) * terrainLoader.heightMapInfo.sizeZ);
 
+			//LEFT SIDE INTERSECTION
+			Tuple intersectleft;
 			//RIGHT SIDE INTERSECTION
 			Tuple intersectright;
-			if (geo.getLineIntersection(&intersectright, pTop, pBottom, pointRight1, pointRight2))
+
+			bool isLeft = geo.getLineIntersection(&intersectleft, pTop, pBottom, pointLeft1, pointLeft2);
+			bool isRight = geo.getLineIntersection(&intersectright, pTop, pBottom, pointRight1, pointRight2);
+
+			if (isLeft && isRight)
+			{
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + i + 1, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + i + 1, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
+				cnt++;
+			}
+			else if (isLeft)
+			{
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + i + 1, Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+				way->leftIntersections.push_back(Triple(intersectleft.x, terrainLoader.getTerrainHeight2(intersectleft.x + parser.bbox.meterBottom, intersectleft.y + parser.bbox.meterLeft), intersectleft.y));
+
+				double ratio = (pointLeft1-intersectleft).length()/(pointLeft1 - pointLeft2).length();
+				Tuple rightPointnew = pointRight1 + (pointRight2 - pointRight1) * ratio;
+				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + i + 1, Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+				way->rightIntersections.push_back(Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
+				cnt++;
+			}
+
+			else if (isRight)
 			{
 				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + i + 1, Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
 				way->rightIntersections.push_back(Triple(intersectright.x, terrainLoader.getTerrainHeight2(intersectright.x + parser.bbox.meterBottom, intersectright.y + parser.bbox.meterLeft), intersectright.y));
-				i++;
+
+				double ratio = (pointRight1 - intersectright).length() / (pointRight1 - pointRight2).length();
+				Tuple leftPointnew = pointLeft1 + (pointLeft2 - pointLeft1) * ratio;
+				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + i + 1, Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+				way->leftIntersections.push_back(Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
+				cnt++;
 			}
-
 		}
+		i += cnt;
 	}
-
-
 }
 
 //17 Mart Version 3 (For Triangle Terrain)
-//Bu basic vertexler icin kullanilacak uzerine intersectionlari tek tek eklicez 3 kosul icin--
+//This will be used for generating initial vertexes
 void sceneGenerator::generateInitial3Dway(HighWay *way)
 {
 	GLfloat waySize = way->size;
@@ -630,7 +746,7 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 			double A1, B1, C1;
 			double A2, B2, C2;
 
-			//INITIAL POINTS ADD TO NODES3D
+			//INITIAL POINTS ARE ADDED TO NODES3D
 			if (i == 0)
 			{
 				Tuple pointLeft1 = Tuple(way->nodes[i].meterx, way->nodes[i].meterz) + Tuple(left1.x, left1.z) * (waySize / 2.0f);
@@ -640,11 +756,11 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 				way->rightSideVertexes.push_back(Triple(pointRight1.x, terrainLoader.getTerrainHeight2(pointRight1.x + parser.bbox.meterBottom, pointRight1.y + parser.bbox.meterLeft), pointRight1.y));
 			}
 
-			//1. dogru left
+			//1. line left
 			Tuple p0 = Tuple(way->nodes[i].meterx, way->nodes[i].meterz) + Tuple(left1.x, left1.z) * (waySize / 2.0f);
 			Tuple p1 = Tuple(way->nodes[i + 1].meterx, way->nodes[i + 1].meterz) + Tuple(left1.x, left1.z) * (waySize / 2.0f);
 
-			//2. dogru left
+			//2. line left
 			Tuple p2 = Tuple(way->nodes[i + 1].meterx, way->nodes[i + 1].meterz) + Tuple(left2.x, left2.z) * (waySize / 2.0f);
 			Tuple p3 = Tuple(way->nodes[i + 2].meterx, way->nodes[i + 2].meterz) + Tuple(left2.x, left2.z) * (waySize / 2.0f);
 
@@ -655,11 +771,11 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 				way->leftSideVertexes.push_back(Triple(iL.x, terrainLoader.getTerrainHeight2(iL.x + parser.bbox.meterBottom, iL.y + parser.bbox.meterLeft), iL.y));
 			
 
-			//1. dogru right
+			//1. line right
 			p0 = Tuple(way->nodes[i].meterx, way->nodes[i].meterz) + Tuple(right1.x, right1.z) * (waySize / 2.0f);
 			p1 = Tuple(way->nodes[i + 1].meterx, way->nodes[i + 1].meterz) + Tuple(right1.x, right1.z) * (waySize / 2.0f);
 
-			//2. dogru right
+			//2. line right
 			p2 = Tuple(way->nodes[i + 1].meterx, way->nodes[i + 1].meterz) + Tuple(right2.x, right2.z) * (waySize / 2.0f);
 			p3 = Tuple(way->nodes[i + 2].meterx, way->nodes[i + 2].meterz) + Tuple(right2.x, right2.z) * (waySize / 2.0f);
 
@@ -670,7 +786,7 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 				way->rightSideVertexes.push_back(Triple(iR.x, terrainLoader.getTerrainHeight2(iR.x + parser.bbox.meterBottom, iR.y + parser.bbox.meterLeft), iR.y));
 
 
-			//ENDING POINTS ADD TO NODES3D
+			//ENDING POINTS ARE ADDEDD TO NODES3D
 			if (i == ((*way).nodes.size() - 3))
 			{
 				Tuple pointLeft1 = Tuple(way->nodes[i + 2].meterx, way->nodes[i + 2].meterz) + Tuple(left2.x, left2.z) * (waySize / 2);
@@ -683,6 +799,49 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 		}
 	}
 
+
+
+}
+
+
+
+//[ON HOLD]
+bool isIntersection(vector<Triple> *list, Triple X)
+{
+	for (int i = 0; i < (*list).size(); i++)
+	{
+		if ( ((*list)[i].x == X.x) && ((*list)[i].y == X.y)  && ((*list)[i].z == X.z))
+			return true;
+	}
+
+	return false;
+}
+//19 March CREATE VBO FOR DRAWING
+void sceneGenerator::generateVBO(HighWay *way)
+{
+	//We will tesselate the road by triangles
+
+	int i = 0, j = 0;
+
+	while (1)
+	{
+		way->textureBuffer.push_back(way->leftSideTexCoords[i]);
+		way->vertexBuffer.push_back(way->leftSideVertexes[i]);
+		way->textureBuffer.push_back(way->rightSideTexCoords[j]);
+		way->vertexBuffer.push_back(way->rightSideVertexes[j]);		
+		way->textureBuffer.push_back(way->rightSideTexCoords[j+1]);
+		way->vertexBuffer.push_back(way->rightSideVertexes[j+1]);
+
+		way->textureBuffer.push_back(way->rightSideTexCoords[j+1]);
+		way->vertexBuffer.push_back(way->rightSideVertexes[j+1]);
+		way->textureBuffer.push_back(way->leftSideTexCoords[i+1]);
+		way->vertexBuffer.push_back(way->leftSideVertexes[i+1]);
+		way->textureBuffer.push_back(way->leftSideTexCoords[i]);
+		way->vertexBuffer.push_back(way->leftSideVertexes[i]);
+
+		i++;
+		j++;
+	}
 
 
 }
