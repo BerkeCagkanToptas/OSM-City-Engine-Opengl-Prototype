@@ -42,10 +42,12 @@ private:
 	void generate3Dway(HighWay *way);
 
 
-
+	void generateVBO(HighWay *way);
 	void addIntersection1(HighWay *way);
 	void addIntersection2(HighWay *way);
 	void addIntersection3(HighWay *way);
+	void divideLongWaySegment(HighWay *way);
+	void generateTexCoords(HighWay *way);
 	void generateInitial3Dway(HighWay *way);
 };
 

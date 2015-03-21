@@ -27,7 +27,6 @@ private:
 	void drawWays();
 	void drawTrees();
 	void drawTerrain();
-	void drawTerrainTriangle();
 
 	void initSkybox();
 	void drawSkybox();
@@ -36,10 +35,13 @@ private:
 	GLuint tessellateAmenity(vector<Way> *wayList);
 	GLuint tessellateArea(vector<Way> *wayList);
 
-	//DEPRECATED
+	GLuint tessellateHighway(HighWay *way, GLuint texture, float layerheight);
+	void generateHighwayList();
+
+
 	void Draw3DWay(HighWay *way, GLuint texture, float layerheight); //LayerHeight : How high it should be compared to other road types for intersection
-	
-	void Draw3DWayNew(HighWay *way, GLuint texture,float layerheight);
+	void drawHighways2();
+
 
 	Triple cameraPos;
 	Triple lookatPos;
