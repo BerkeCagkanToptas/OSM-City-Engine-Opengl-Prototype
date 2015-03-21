@@ -7,6 +7,7 @@ using namespace std;
 
 void sceneGenerator::init(char* XMLfile, char* GEOfile)
 {
+
 	cout << "reading GeoData ..." << endl;
 	terrainLoader.loadheightmap(GEOfile);
 	cout << "reading OSM file ..." << endl;
@@ -29,21 +30,7 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	generate3DRoads();
 	
 
-	//MercatorProjection proj;
-	//cout.precision(12);
-	//coordinate coord = proj.LatLontoMeters(9.30, 20.15);
-	//cout << "originShift:" << proj.originShift << endl;
-	//cout << "Bir enlem boyu :" << proj.originShift / 180.0f << endl;
-	//cout << "Input:  9.30,20.15" << endl;
-	//cout <<"Meter:" << coord.meterx << " " << coord.meterz << endl;
-	//coordinate coord2 = proj.meterstoLatLon(coord.meterx, coord.meterz);
-	//cout << "Lat/Lon:" << coord2.meterx << " " << coord2.meterz << endl;
-	//cout << "--------------" << endl;
-	//coord = proj.LatLontoMeters(45, 9);	
-	//cout << "Input:  45,9" << endl;
-	//cout << "Meter:" << coord.meterx << " " << coord.meterz << endl;
-	//coord2 = proj.meterstoLatLon(coord.meterx, coord.meterz);
-	//cout << "Lat/Lon:" << coord2.meterx << " " << coord2.meterz << endl;
+
 
 
 }

@@ -975,11 +975,11 @@ void sceneRender::drawScene()
 
 	drawWays();
 	//drawBuildings2();
-	//drawBuildings();	
+	drawBuildings();	
 	drawHighways2();
 
 	glColor3f(0.45, 0.3, 0.3);
-	//glCallList(roofdraw);
+	glCallList(roofdraw);
 	//glCallList(roofdraw2);
 	glColor3f(0.2, 0.2, 0.2);
 	glCallList(amenitydraw);
