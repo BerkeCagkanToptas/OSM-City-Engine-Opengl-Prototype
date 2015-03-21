@@ -498,6 +498,7 @@ void sceneGenerator::addIntersection1(HighWay *way)
 					rightiterator++;
 				}
 				cnt++;
+
 			}
 			else if (isright)
 			{
@@ -592,7 +593,7 @@ void sceneGenerator::addIntersection2(HighWay *way)
 				way->rightSideVertexes.insert(way->rightSideVertexes.begin() + rightit, Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
 				way->rightIntersections.push_back(Triple(rightPointnew.x, terrainLoader.getTerrainHeight2(rightPointnew.x + parser.bbox.meterBottom, rightPointnew.y + parser.bbox.meterLeft), rightPointnew.y));
 
-				if (pointLeft1.y - pointLeft2.y < 0)
+				if (pointLeft1.x - pointLeft2.x < 0)
 				{
 					leftit++;
 					rightit++;
@@ -610,7 +611,7 @@ void sceneGenerator::addIntersection2(HighWay *way)
 				way->leftSideVertexes.insert(way->leftSideVertexes.begin() + leftit, Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
 				way->leftIntersections.push_back(Triple(leftPointnew.x, terrainLoader.getTerrainHeight2(leftPointnew.x + parser.bbox.meterBottom, leftPointnew.y + parser.bbox.meterLeft), leftPointnew.y));
 
-				if (pointRight1.y - pointRight2.y < 0)
+				if (pointRight1.x - pointRight2.x < 0)
 				{
 					rightit++;
 					leftit++;
