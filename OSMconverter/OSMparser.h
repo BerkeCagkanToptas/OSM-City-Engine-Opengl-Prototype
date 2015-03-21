@@ -138,14 +138,17 @@ struct HighWay
 	vector<Tag> tags;
 	float size;
 
-	double* nodes3D; //DEPRECATED
-	int nodes3DSize; //DEPRECATED
-
 	vector<Triple> leftSideVertexes;
 	vector<Triple> rightSideVertexes;
 
+	vector<Tuple> leftSideTexCoords;
+	vector<Tuple> rightSideTexCoords;
+
 	vector<Triple> leftIntersections;
 	vector<Triple> rightIntersections;
+
+	vector<Triple> vertexBuffer;
+	vector<Tuple> textureBuffer;
 	
 };
 
