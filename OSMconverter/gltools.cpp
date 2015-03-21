@@ -18,7 +18,7 @@ Motion::Motion()
 	for (int i = 0; i < 256; i++)
 		allKeys[i] = false;
 
-	speed = 1.0f;
+	speed = 2.0f;
 	t = 0.03f;
 
 	GLint m_viewport[4];
@@ -124,7 +124,6 @@ void Motion::KeyActions()
 	if (allKeys[(int) 'o'])
 		debug = false;
 		
-
 	if (allKeys[27])
 		exit(1);
 }
@@ -169,13 +168,13 @@ void Motion::mouseWheel(int button, int dir, int x, int y)
 	{
 		cameraPosition.y -= 10*speed;
 		lookatPosition.y -= 10 * speed;
-		speed -= 0.1;
+		speed = 0.9 * speed;
 	}
 	else
 	{
 		cameraPosition.y += 10*speed;
 		lookatPosition.y += 10 * speed;
-		speed += 0.1;
+		speed = 1.1 * speed;
 	}
 	glutPostRedisplay();
 }

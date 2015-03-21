@@ -121,6 +121,12 @@ public :
 		return Tuple(x*coeff, y*coeff);
 	}
 
+	double length()
+	{
+		return sqrt(x*x + y*y);
+
+	}
+
 	float x;
 	float y;
 };
