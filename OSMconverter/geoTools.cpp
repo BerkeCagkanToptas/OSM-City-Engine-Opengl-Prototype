@@ -10,9 +10,9 @@ coordinate MercatorProjection::LatLontoMeters(double lat, double lon)
 {
 	double meterx, meterz;
 
-	meterx = lat * originShift / 180.0f;
-	meterz = log(tan((90 + lon) * PI / 360.0)) / (PI / 180);
-	meterz = meterz * originShift / 180.0f;
+	meterz = lon * originShift / 180.0f;
+	meterx = log(tan((90 + lat) * PI / 360.0)) / (PI / 180);
+	meterx = meterx * originShift / 180.0f;
 
 	return coordinate{ meterx, meterz };
 }
@@ -23,9 +23,9 @@ coordinate MercatorProjection::meterstoLatLon(double mx, double my)
 
 	double lat, lon;
 
-	lat = (mx / originShift) * 180.0;
 	lon = (my / originShift) * 180.0;
-	lon = 180 / PI * (2 * atan(exp(lon * PI / 180.0)) - PI / 2.0);
+	lat = (mx / originShift) * 180.0;
+	lat = 180 / PI * (2 * atan(exp(lat * PI / 180.0)) - PI / 2.0);
 
 	coord.meterx = lat;
 	coord.meterz = lon;
@@ -105,113 +105,91 @@ short TerrainLoader::convertLittleEndian(short num)
 
 }
 
-short TerrainLoader::getTerrainHeight(double lat, double lon) // BiLinear Interpolation is Applied
+double TerrainLoader::getTerrainHeight(double lat, double lon) // BiLinear Interpolation is Applied
 {
-	
-
 	MercatorProjection proj;
 	coordinate coord = proj.LatLontoMeters(lat,lon);
-	
 	return getTerrainTriangleHeight(coord.meterx, coord.meterz);
-
-	double ratioX = (heightMapInfo.coordmax.meterx - coord.meterx) / heightMapInfo.height;
-	double ratioZ = (coord.meterz - heightMapInfo.coordmin.meterz) / heightMapInfo.width;
-
-	double Xindex = (1200 * ratioX);
-	double Zindex = (1200 * ratioZ);
-
-	int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
-	int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
-	double interpolationUp = m + (n-m) * (Zindex - floor(Zindex));
-
-	n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
-	m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
-	double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
-
-
-	double interpolatedValue = interpolationDown + (interpolationUp - interpolationDown) * (ceil(Xindex) - Xindex);
-	return interpolatedValue;
 }
 
-short TerrainLoader::getTerrainHeight2(double meterx, double meterz)
+double TerrainLoader::getTerrainHeight2(double meterx, double meterz)
 {
 	return getTerrainTriangleHeight(meterx, meterz);
-
-	double ratioX = (heightMapInfo.coordmax.meterx - meterx) / heightMapInfo.height;
-	double ratioZ = (meterz - heightMapInfo.coordmin.meterz) / heightMapInfo.width;
-
-	double Xindex = (1200 * ratioX);
-	double Zindex = (1200 * ratioZ);
-
-	int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
-	int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
-	double interpolationUp = m + (n - m) * (Zindex - floor(Zindex));
-
-	n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
-	m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
-	double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
-
-
-	double interpolatedValue = interpolationDown + (interpolationUp - interpolationDown) * (ceil(Xindex) -Xindex);
-	return interpolatedValue;
-
-
 }
 
-short TerrainLoader::getTerrainTriangleHeight(double meterx, double meterz)
+double TerrainLoader::getTerrainTriangleHeight(double meterx, double meterz)
 {
-	double ratioX = (heightMapInfo.coordmax.meterx - meterx) / heightMapInfo.height;
-	double ratioZ = (meterz - heightMapInfo.coordmin.meterz) / heightMapInfo.width;
+		double finalvalue;
 
-	double Xindex = (1200 * ratioX);
-	double Zindex = (1200 * ratioZ);
 
-	//Upper Triangle
-	if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) < 1.0f)
-	{
-		int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
-		int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
-		int k = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
-		double interpolationUp = m + (n - m) * (Zindex - floor(Zindex));
-		double interpolationHypothenus = k + (n - k) * (Zindex - floor(Zindex));
+		double ratioX = (heightMapInfo.coordmax.meterx - meterx) / heightMapInfo.height;
+		double ratioZ = (meterz - heightMapInfo.coordmin.meterz) / heightMapInfo.width;
+	
+		double Xindex = (1200 * ratioX);
+		double Zindex = (1200 * ratioZ);
 
-		double a = Xindex - floor(Xindex);
-		double aplusb = (1 + floor(Zindex) - Zindex);
-		double finalvalue = interpolationUp + (interpolationHypothenus - interpolationUp) * (a / aplusb);
-		return finalvalue;
-	}
-
-	//Lower Triangle
-	else if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) >= 1.0f)
-	{
-		int n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
-		int m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
-		int k = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
-		double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
-		double interpolationHypothenus = m + (k - m) * (Zindex - floor(Zindex));
+		//Upper Triangle
+		if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) < 1.0f)
+		{
+			int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
+			int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
+			int k = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
+			double interpolationUp = m + (n - m) * (Zindex - floor(Zindex));
+			double interpolationHypothenus = k + (n - k) * (Zindex - floor(Zindex));
 		
-		double a = ceil(Xindex) - Xindex;
-		double aplusb = Zindex - floor(Zindex);
-		double finalvalue = interpolationDown + (interpolationHypothenus - interpolationDown) * (a / aplusb);
+			double Xtop = heightMapInfo.coordmax.meterx - floor(Xindex) * heightMapInfo.sizeX;
+			double a = Xtop - meterx;
+			double aplusb = heightMapInfo.sizeX * (ceil(Zindex) - Zindex);
+			finalvalue = interpolationUp + (interpolationHypothenus - interpolationUp) * (a / aplusb);
+			//return finalvalue;
+
+		}
+
+		//Lower Triangle
+		else if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) >= 1.0f)
+		{
+			int n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
+			int m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
+			int k = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
+			double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
+			double interpolationHypothenus = m + (k - m) * (Zindex - floor(Zindex));
+				
+			double Xbottom = heightMapInfo.coordmax.meterx - ceil(Xindex) * heightMapInfo.sizeX;
+			double a = meterx - Xbottom;
+			double aplusb = heightMapInfo.sizeX * (Zindex - floor(Zindex));
+			finalvalue = interpolationDown + (interpolationHypothenus - interpolationDown) * (a / aplusb);
+			//return finalvalue;
+		}
+
+		//[ALTERNATE METHOD]
+		//double finalvalue2;
+		////Upper Triangle
+		//if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) < 1.0f)
+		//{
+		//	int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
+		//	int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
+		//	int k = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
+		//	double interpolationUp = m + (n - m) * (Zindex - floor(Zindex));
+		//	double interpolationHypothenus = k + (n - k) * (Zindex - floor(Zindex));
+		//
+		//	double a = Xindex - floor(Xindex);
+		//	double aplusb = (ceil(Zindex) - Zindex);
+		//	finalvalue2 = interpolationUp + (interpolationHypothenus - interpolationUp) * (a / aplusb);
+		//}
+		//
+		////Lower Triangle
+		//else if ((Xindex - floor(Xindex)) + (Zindex - floor(Zindex)) >= 1.0f)
+		//{
+		//	int n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
+		//	int m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
+		//	int k = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
+		//	double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
+		//	double interpolationHypothenus = m + (k - m) * (Zindex - floor(Zindex));
+		//		
+		//	double a = ceil(Xindex) - Xindex;
+		//	double aplusb = Zindex - floor(Zindex);
+		//	finalvalue2 = interpolationDown + (interpolationHypothenus - interpolationDown) * (a / aplusb);
+		//}
+
 		return finalvalue;
-	}
-	//Point is on Hypothenus
-	else
-	{
-
-	}
-
-
-	int n = heightmap[(int)floor(Xindex)][(int)ceil(Zindex)];
-	int m = heightmap[(int)floor(Xindex)][(int)floor(Zindex)];
-	double interpolationUp = m + (n - m) * (Zindex - floor(Zindex));
-
-	n = heightmap[(int)ceil(Xindex)][(int)ceil(Zindex)];
-	m = heightmap[(int)ceil(Xindex)][(int)floor(Zindex)];
-	double interpolationDown = m + (n - m) * (Zindex - floor(Zindex));
-
-
-	double interpolatedValue = interpolationDown + (interpolationUp - interpolationDown) * (ceil(Xindex) - Xindex);
-	return interpolatedValue;
-
 }

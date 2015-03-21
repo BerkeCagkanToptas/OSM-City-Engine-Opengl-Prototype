@@ -52,10 +52,11 @@ public:
 	HeightmapInfo heightMapInfo;
 	void loadheightmap(char* filename);
 
-	short getTerrainTriangleHeight(double meterx, double meterz);
+	double getTerrainTriangleHeight(double meterx, double meterz);
 
-	short getTerrainHeight(double lat, double lon);
-	short getTerrainHeight2(double meterx, double meterz);
+
+	double getTerrainHeight(double lat, double lon);
+	double getTerrainHeight2(double meterx, double meterz);
 private:
 	short convertLittleEndian(short num);
 
