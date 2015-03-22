@@ -147,9 +147,9 @@ struct HighWay
 	vector<Triple> leftIntersections;
 	vector<Triple> rightIntersections;
 
-	vector<Triple> vertexBuffer;
-	vector<Tuple> textureBuffer;
-	
+	float *vertexBuffer;
+	float *textureBuffer;
+
 };
 
 struct BBox

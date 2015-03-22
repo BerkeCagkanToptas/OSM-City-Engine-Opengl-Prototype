@@ -28,6 +28,9 @@ public:
 	vector<Node> Trees;
 	
 
+	void generateHighwayBuffers(HighWay *way, float *vertexBuffer, float *textureBuffer);
+	void generateBuildingBuffers(Building *building, float *vertexBuffer, float *textureBuffer);
+
 private:
 	void updateBuildingHeights();
 	void updateWayHeights();
@@ -42,7 +45,6 @@ private:
 	void generate3Dway(HighWay *way);
 
 
-	void generateVBO(HighWay *way);
 	void addIntersection1(HighWay *way);
 	void addIntersection2(HighWay *way);
 	void addIntersection3(HighWay *way);

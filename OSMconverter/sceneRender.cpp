@@ -9,16 +9,19 @@ GLuint roofdraw;
 GLuint roofdraw2;
 GLuint amenitydraw;
 GLuint areadraw;
-GLuint *highwayDraw;
+
 GLdouble vertices[100000][6];               // arrary to store newly created vertices (x,y,z,r,g,b) by combine callback
 int vertexIndex = 0;                    // array index for above array incremented inside combine callback
 int ind = 0;
 GLdouble vertex[100000][3];
 
+GLuint *highwayDraw;
 GLdouble **highwayVertex;
 int highwayVertexIndex = 0;
 
 
+GLuint **highwayVBO;
+GLuint **buildingVBO;
 
 
 // CALLBACK functions for GLU_TESS ////////////////////////////////////////////
@@ -294,7 +297,7 @@ GLuint sceneRender::tessellateHighway(HighWay *way, GLuint texture, float layerh
 }
 
 sceneRender::sceneRender(char* XMLfile, char* GEOfile)
-{
+{	
 	scene.init(XMLfile, GEOfile);
 }
 
@@ -445,8 +448,10 @@ void sceneRender::initScene(void)
 	roofdraw2 = tessellateRoof2();
 	amenitydraw = tessellateAmenity(&scene.parser.wayList);
 	areadraw = tessellateArea(&scene.parser.wayList);
-	generateHighwayList();
-
+	
+	//generateHighwayList(); //FOR TESSELATED WAYS
+	generateHighwayVBO();
+	generateBuildingVBO();
 
 	//shader.init("shader.vert", "shader.frag");
 
@@ -672,7 +677,7 @@ void sceneRender::drawBuildings2()
 
 }
 
-//DEPRECATED
+//DEPRECATED - IMMEDIATE DRAW
 void sceneRender::drawHighways2()
 {
 	for (int i = 0; i < scene.parser.highWayList.size(); i++)
@@ -734,6 +739,7 @@ void sceneRender::drawHighways2()
 
 }
 
+//DEPRECATED - DRAWING WITH TESSELATION
 void sceneRender::drawHighways()
 {
 	glEnable(GL_TEXTURE_2D);
@@ -808,7 +814,6 @@ void sceneRender::drawHighways()
 	glDisable(GL_TEXTURE_2D);
 	glColor3f(1.0f,1.0f,1.0f);
 }
-
 void sceneRender::generateHighwayList()
 {
 	highwayDraw = new GLuint[scene.parser.highWayList.size()];
@@ -851,17 +856,222 @@ void sceneRender::generateHighwayList()
 
 		case wayType::highwayPath:
 			continue;
-
 			highwayDraw[i] = tessellateHighway(&scene.parser.highWayList[i], roadPathTexture, 0.005);
 			continue;
 
 		case wayType::river:
-			Draw3DWay(&scene.parser.highWayList[i], riverTexture, 0.005);
+			highwayDraw[i] = tessellateHighway(&scene.parser.highWayList[i], riverTexture, 0.005);
 			continue;
 		}
 	}
 
 
+}
+
+
+void sceneRender::generateHighwayVBO()
+{
+	float *textureBuffer;
+	float *vertexBuffer;
+
+	highwayVBO = new GLuint*[scene.parser.highWayList.size()];
+	for (int i = 0; i < scene.parser.highWayList.size(); i++)
+	{
+		int vertexBufferSize = scene.parser.highWayList[i].leftSideVertexes.size() * 6;
+		int textureBufferSize = scene.parser.highWayList[i].leftSideVertexes.size() * 4;
+
+		vertexBuffer = new float[vertexBufferSize];
+		textureBuffer = new float[textureBufferSize];
+		scene.generateHighwayBuffers(&scene.parser.highWayList[i],vertexBuffer, textureBuffer);
+
+		highwayVBO[i] = new GLuint[2];
+		glGenBuffers(1, &highwayVBO[i][0]); 
+		glBindBuffer(GL_ARRAY_BUFFER, highwayVBO[i][0]); // Bind our vertex Buffer 
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * vertexBufferSize, vertexBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glGenBuffers(1, &highwayVBO[i][1]);
+		glBindBuffer(GL_ARRAY_BUFFER, highwayVBO[i][1]); // Bind our texture Buffer
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * textureBufferSize, textureBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		delete vertexBuffer;
+		delete textureBuffer;
+	}
+}
+void sceneRender::drawHighwayVBO()
+{
+
+	glEnable(GL_TEXTURE_2D);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+	for (int i = 0; i < scene.parser.highWayList.size(); i++)
+	{
+		switch (scene.parser.highWayList[i].type)
+		{
+		case wayType::railway:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, railwayTexture);
+			break;
+
+		case wayType::river:
+			glColor3f(0.7f, 0.7f, 0.7f);
+			glBindTexture(GL_TEXTURE_2D, riverTexture);
+			break;
+
+		case wayType::highwayResidual:
+			glColor3f(0.8f, 0.8f, 0.8f);
+			glBindTexture(GL_TEXTURE_2D, roadResidualTexture);
+			break;
+
+		case wayType::highwayUnclassified:
+			glColor3f(0.8f, 0.8f, 0.8f);
+			glBindTexture(GL_TEXTURE_2D, roadUnclassifiedTexture);
+			break;
+
+		case wayType::highwayService:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, roadServiceTexture);
+			break;
+
+		case wayType::highwayPrimary:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, roadPrimaryTexture);
+			break;
+
+		case wayType::highwaySecondary:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, roadSecondaryTexture);
+			break;
+
+		case wayType::highwayTertiary:
+			glColor3f(0.8f, 0.8f, 0.8f);
+			glBindTexture(GL_TEXTURE_2D, roadTertiaryTexture);
+			break;
+
+		case wayType::highwayPedestrian:
+			glColor3f(0.9f, 0.8f, 0.8f);
+			glBindTexture(GL_TEXTURE_2D, roadPavementTexture);
+			break;
+
+		case wayType::highwayPath:
+			continue;
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, roadPathTexture);
+			break;
+		}
+
+
+		glBindBuffer(GL_ARRAY_BUFFER, highwayVBO[i][0]);
+		glVertexPointer(3, GL_FLOAT, 0, 0l);
+
+		glBindBuffer(GL_ARRAY_BUFFER, highwayVBO[i][1]);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0l);
+
+
+
+		//cout << scene.parser.highWayList[i].leftSideVertexes.size() << endl;
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, scene.parser.highWayList[i].leftSideVertexes.size()*2);
+		
+
+
+	}
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+
+}
+
+void sceneRender::generateBuildingVBO()
+{
+	float *textureBuffer;
+	float *vertexBuffer;
+
+	buildingVBO = new GLuint*[scene.parser.buildingList.size()];
+	for (int i = 0; i < scene.parser.buildingList.size(); i++)
+	{
+		int vertexBufferSize = scene.parser.buildingList[i].nodes.size() * 4 * 3;
+		int textureBufferSize = scene.parser.buildingList[i].nodes.size() * 4 * 2;
+
+		vertexBuffer = new float[vertexBufferSize];
+		textureBuffer = new float[textureBufferSize];
+		scene.generateBuildingBuffers(&scene.parser.buildingList[i], vertexBuffer, textureBuffer);
+
+		buildingVBO[i] = new GLuint[2];
+		glGenBuffers(1, &buildingVBO[i][0]);
+		glBindBuffer(GL_ARRAY_BUFFER, buildingVBO[i][0]); // Bind our vertex Buffer 
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)* vertexBufferSize, vertexBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glGenBuffers(1, &buildingVBO[i][1]);
+		glBindBuffer(GL_ARRAY_BUFFER, buildingVBO[i][1]); // Bind our texture Buffer
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)* textureBufferSize, textureBuffer, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		delete vertexBuffer;
+		delete textureBuffer;
+	}
+
+}
+void sceneRender::drawBuildingVBO()
+{
+	glEnable(GL_TEXTURE_2D);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+
+	for (int i = 0; i < scene.parser.buildingList.size(); i++)
+	{
+
+		switch (scene.parser.buildingList[i].TextureID)
+		{
+		case 1:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, buildingTexture);
+			break;
+		case 2:
+			glColor3f(0.5f, 0.5f, 0.5f);
+			glBindTexture(GL_TEXTURE_2D, buildingTexture2);
+			break;
+		case 3:
+			glColor3f(0.5f, 0.5f, 0.5f);
+			glBindTexture(GL_TEXTURE_2D, buildingTexture3);
+			break;
+		case 4:
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glBindTexture(GL_TEXTURE_2D, kioskTexture);
+			break;
+		case 5:
+			glColor3f(0.5f, 0.5f, 0.5f);
+			glBindTexture(GL_TEXTURE_2D, wallTexture);
+			break;
+		}
+
+
+		glBindBuffer(GL_ARRAY_BUFFER, buildingVBO[i][0]);
+		glVertexPointer(3, GL_FLOAT, 0, 0l);
+
+		glBindBuffer(GL_ARRAY_BUFFER, buildingVBO[i][1]);
+		glTexCoordPointer(2, GL_FLOAT, 0, 0l);
+
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, scene.parser.buildingList[i].nodes.size() * 2);
+	}
+
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 void sceneRender::drawWays()
@@ -974,13 +1184,16 @@ void sceneRender::drawScene()
 {
 
 	drawWays();
-	//drawBuildings2();
-	drawBuildings();	
-	drawHighways2();
+	drawBuildings2();	
+
+	if (mot.debug)
+		drawHighways2();
+	drawHighwayVBO();
+	drawBuildingVBO();
 
 	glColor3f(0.45, 0.3, 0.3);
 	glCallList(roofdraw);
-	//glCallList(roofdraw2);
+	glCallList(roofdraw2);
 	glColor3f(0.2, 0.2, 0.2);
 	glCallList(amenitydraw);
 	glColor3f(0.45f, 0.4, 0.4f);
@@ -1022,29 +1235,22 @@ void sceneRender::idlefunc()
 
 void sceneRender::Draw3DWay(HighWay *way, GLuint texture,float layerheight)
 {
-
+	/*
 	glEnable(GL_TEXTURE_2D);
 	layerheight += 0.3f;
 	glBindTexture(GL_TEXTURE_2D, texture);
-
-	glBegin(GL_QUADS);
-
-	for (int i = 0; i < min((int)way->leftSideVertexes.size(), (int)way->rightSideVertexes.size())- 1; i++)
+	glBegin(GL_TRIANGLE_STRIP);
+	for (int i = 0; i < way->leftSideVertexes.size(); i++)
 	{
 		glTexCoord2f(way->leftSideTexCoords[i].x, way->leftSideTexCoords[i].y);
-		glVertex3f(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y +layerheight, way->leftSideVertexes[i].z);
-		
+		glVertex3f(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y + layerheight, way->leftSideVertexes[i].z);
+
 		glTexCoord2f(way->rightSideTexCoords[i].x, way->rightSideTexCoords[i].y);
 		glVertex3f(way->rightSideVertexes[i].x, way->rightSideVertexes[i].y + layerheight, way->rightSideVertexes[i].z);
-		
-		glTexCoord2f(way->rightSideTexCoords[i + 1].x, way->rightSideTexCoords[i+1].y);
-		glVertex3f(way->rightSideVertexes[i + 1].x, way->rightSideVertexes[i+1].y + layerheight, way->rightSideVertexes[i + 1].z);
-		
-		glTexCoord2f(way->leftSideTexCoords[i+1].x, way->leftSideTexCoords[i+1].y);
-		glVertex3f(way->leftSideVertexes[i + 1].x, way->leftSideVertexes[i + 1].y + layerheight, way->leftSideVertexes[i + 1].z);
 	}
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
+	*/
 
 	if (mot.debug) //DEBUG
 	{
@@ -1053,7 +1259,7 @@ void sceneRender::Draw3DWay(HighWay *way, GLuint texture,float layerheight)
 		{
 			glPushMatrix();
 			glTranslatef(way->leftIntersections[i].x, way->leftIntersections[i].y, way->leftIntersections[i].z);
-			glutSolidSphere(2.0f, 5, 5);
+			glutSolidSphere(1.0f, 8, 8);
 			glPopMatrix();
 		}
 
@@ -1063,27 +1269,27 @@ void sceneRender::Draw3DWay(HighWay *way, GLuint texture,float layerheight)
 		{
 			glPushMatrix();
 			glTranslatef(way->rightIntersections[i].x, way->rightIntersections[i].y, way->rightIntersections[i].z);
-			glutSolidSphere(2.0f, 5, 5);
+			glutSolidSphere(1.0f, 8, 8);
 			glPopMatrix();
 		}
 
-		glColor3f(0.5f, 0.1f, 0.1f);
-		for (int i = 0; i < way->rightSideVertexes.size(); i++)
-		{
-			glPushMatrix();
-			glTranslatef(way->rightSideVertexes[i].x, way->rightSideVertexes[i].y, way->rightSideVertexes[i].z);
-			glutSolidSphere(0.8f, 10, 10);
-			glPopMatrix();
-		}
+		//glColor3f(0.5f, 0.1f, 0.1f);
+		//for (int i = 0; i < way->rightSideVertexes.size(); i++)
+		//{
+		//	glPushMatrix();
+		//	glTranslatef(way->rightSideVertexes[i].x, way->rightSideVertexes[i].y, way->rightSideVertexes[i].z);
+		//	glutSolidSphere(0.8f, 10, 10);
+		//	glPopMatrix();
+		//}
 
-		glColor3f(0.1f, 0.1f, 0.6f);
-		for (int i = 0; i < way->leftSideVertexes.size(); i++)
-		{
-			glPushMatrix();
-			glTranslatef(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y, way->leftSideVertexes[i].z);
-			glutSolidSphere(0.8f, 10, 10);
-			glPopMatrix();
-		}
+		//glColor3f(0.1f, 0.1f, 0.6f);
+		//for (int i = 0; i < way->leftSideVertexes.size(); i++)
+		//{
+		//	glPushMatrix();
+		//	glTranslatef(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y, way->leftSideVertexes[i].z);
+		//	glutSolidSphere(0.8f, 10, 10);
+		//	glPopMatrix();
+		//}
 
 
 	}
@@ -1093,47 +1299,8 @@ void sceneRender::Draw3DWay(HighWay *way, GLuint texture,float layerheight)
 
 }
 
-//19 March
-//void sceneRender::Draw3DWay(HighWay *way, GLuint texture, float layerheight)
-//{
-//	glEnable(GL_TEXTURE_2D);
-//	layerheight += 1.0f;
-//	glBindTexture(GL_TEXTURE_2D, texture);
-//
-//	glBegin(GL_TRIANGLES);
-//	
-//	for (int i = 0, j = 0; i < min((int)way->leftSideVertexes.size(), (int)way->rightSideVertexes.size()) - 1;)
-//	{
-//		//1st Triangle
-//		glTexCoord2f(way->leftSideTexCoords[i].x, way->leftSideTexCoords[i].y);
-//		glVertex3f(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y + layerheight, way->leftSideVertexes[i].z);
-//		glTexCoord2f(way->rightSideTexCoords[j].x, way->rightSideTexCoords[j].y);
-//		glVertex3f(way->rightSideVertexes[j].x, way->rightSideVertexes[j].y + layerheight, way->rightSideVertexes[j].z);
-//		glTexCoord2f(way->rightSideTexCoords[j+1].x, way->rightSideTexCoords[j+1].y);
-//		glVertex3f(way->rightSideVertexes[j+1].x, way->rightSideVertexes[j+1].y + layerheight, way->rightSideVertexes[j+1].z);
-//
-//		//2nd Triangle
-//		glTexCoord2f(way->rightSideTexCoords[j + 1].x, way->rightSideTexCoords[j + 1].y);
-//		glVertex3f(way->rightSideVertexes[j + 1].x, way->rightSideVertexes[j + 1].y + layerheight, way->rightSideVertexes[j + 1].z);
-//		glTexCoord2f(way->leftSideTexCoords[i+1].x, way->leftSideTexCoords[i+1].y);
-//		glVertex3f(way->leftSideVertexes[i+1].x, way->leftSideVertexes[i+1].y + layerheight, way->leftSideVertexes[i+1].z);
-//		glTexCoord2f(way->leftSideTexCoords[i].x, way->leftSideTexCoords[i].y);
-//		glVertex3f(way->leftSideVertexes[i].x, way->leftSideVertexes[i].y + layerheight, way->leftSideVertexes[i].z);
-//
-//		i++;
-//		j++;
-//	}
-//
-//	glEnd();
-//
-//
-//
-//
-//	glDisable(GL_TEXTURE_2D);
-//
-//
-//
-//}
+
+
 
 //=============================================================================
 // CALLBACKS

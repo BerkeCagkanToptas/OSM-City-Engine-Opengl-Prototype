@@ -10,7 +10,7 @@
 using namespace std;
 
 
-sceneRender renderer("OSMFiles/Pannilani.osm", "HeightMapFiles/N45E009.hgt");
+sceneRender renderer("OSMFiles/comoGeneral.osm", "HeightMapFiles/N45E009.hgt");
 
 
 /*Functions definitions for GLUT function calls */
@@ -40,9 +40,9 @@ int main(int argc, char **argv)
 	glutIdleFunc(Idle);
 	glutReshapeFunc(Reshape);
 
+
 	//glutSetCursor(GLUT_CURSOR_NONE);
 	renderer.initScene();
-
 
 	glutMainLoop();
 	return 0;

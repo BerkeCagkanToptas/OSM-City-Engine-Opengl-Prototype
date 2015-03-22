@@ -358,11 +358,10 @@ void OSMparser::readWayType(MSXML2::IXMLDOMNode* node)
 
 		building.TextureID = rand() % 3 + 1;
 		buildingList.push_back(building);
-		//wayList.push_back(newWay);
 		break;
 //*----------------------------------------------------------------------------	
 	case wayType::highwayPedestrian:
-	case wayType::highwayFootway:
+	//case wayType::highwayFootway:
 	case wayType::highwayPrimary:
 	case wayType::highwayResidual:
 	case wayType::highwaySecondary:

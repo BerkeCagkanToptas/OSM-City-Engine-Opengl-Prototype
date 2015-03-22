@@ -7,9 +7,10 @@ using namespace std;
 
 void sceneGenerator::init(char* XMLfile, char* GEOfile)
 {
-
 	cout << "reading GeoData ..." << endl;
 	terrainLoader.loadheightmap(GEOfile);
+	cout << "succesfully read" << endl;
+
 	cout << "reading OSM file ..." << endl;
 	parser.parseOSM(XMLfile);
 	cout << "Succesfully read" << endl;
@@ -22,16 +23,11 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	updateBuildingHeights();
 	updateWayHeights();
 
-	generateBuildingList();
-
 	fillTreeTable();
-	
-	
+
+	generateBuildingList();
 	generate3DRoads();
 	
-
-
-
 
 }
 
@@ -222,16 +218,6 @@ void sceneGenerator::fillTreeTable()
 	}
 }
 
-
-//HELPERS FOR correctWay Connection Function
-double findDistance(Node *node1, Node *node2)
-{
-	return sqrt(pow(node1->meterx - node2->meterx, 2) + pow(node1->meterz - node2->meterz, 2));
-}
-double findDistance(Tuple d1, Tuple d2)
-{
-	return sqrt(pow(d1.x - d2.x, 2) + pow(d1.y - d2.y, 2));
-}
 
 //void sceneGenerator::correctWayConnections()
 //{
@@ -791,46 +777,91 @@ void sceneGenerator::generateInitial3Dway(HighWay *way)
 
 }
 
-
-
-//[ON HOLD]
-bool isIntersection(vector<Triple> *list, Triple X)
+//21 March CREATE VBOS FOR DRAWING
+void sceneGenerator::generateHighwayBuffers(HighWay *way, float *vertexBuffer, float *textureBuffer)
 {
-	for (int i = 0; i < (*list).size(); i++)
+	float layerNO;
+	switch (way->type)
 	{
-		if ( ((*list)[i].x == X.x) && ((*list)[i].y == X.y)  && ((*list)[i].z == X.z))
-			return true;
-	}
+	case wayType::highwayPedestrian:
+		layerNO = 0;
+	case wayType::highwayPrimary:
+		layerNO = 7;
+		break;
+	case wayType::highwayResidual:
+		layerNO = 4;
+		break;
+	case wayType::highwaySecondary:
+		layerNO = 6;
+		break;
+	case wayType::highwayService:
+		layerNO = 3;
+		break;
+	case wayType::highwayTertiary:
+		layerNO = 5;
+		break;
+	case wayType::highwayUnclassified:
+		layerNO = 3;
+		break;
+	case wayType::railway:
+		layerNO = 8;
+		break;
+	case wayType::river:
+		layerNO = 0;
+		break;
+	case wayType::highwayPath:
+		layerNO = 0;
 
-	return false;
-}
-//19 March CREATE VBO FOR DRAWING
-void sceneGenerator::generateVBO(HighWay *way)
-{
-	//We will tesselate the road by triangles
-
-	int i = 0, j = 0;
-
-	while (1)
-	{
-		way->textureBuffer.push_back(way->leftSideTexCoords[i]);
-		way->vertexBuffer.push_back(way->leftSideVertexes[i]);
-		way->textureBuffer.push_back(way->rightSideTexCoords[j]);
-		way->vertexBuffer.push_back(way->rightSideVertexes[j]);		
-		way->textureBuffer.push_back(way->rightSideTexCoords[j+1]);
-		way->vertexBuffer.push_back(way->rightSideVertexes[j+1]);
-
-		way->textureBuffer.push_back(way->rightSideTexCoords[j+1]);
-		way->vertexBuffer.push_back(way->rightSideVertexes[j+1]);
-		way->textureBuffer.push_back(way->leftSideTexCoords[i+1]);
-		way->vertexBuffer.push_back(way->leftSideVertexes[i+1]);
-		way->textureBuffer.push_back(way->leftSideTexCoords[i]);
-		way->vertexBuffer.push_back(way->leftSideVertexes[i]);
-
-		i++;
-		j++;
 	}
 
 
+	for (int i = 0,text =0,vertex=0; i < way->leftSideVertexes.size(); i++)
+	{
+		//LEFT SIDE
+		vertexBuffer[vertex++] = way->leftSideVertexes[i].x;
+		vertexBuffer[vertex++] = way->leftSideVertexes[i].y +0.25f + layerNO*0.005f;
+		vertexBuffer[vertex++] = way->leftSideVertexes[i].z;
+		textureBuffer[text++] = way->leftSideTexCoords[i].x;
+		textureBuffer[text++] = way->leftSideTexCoords[i].y;
+		
+		//RIGHT SIDE
+		vertexBuffer[vertex++] = way->rightSideVertexes[i].x;
+		vertexBuffer[vertex++] = way->rightSideVertexes[i].y + 0.25f + layerNO*0.005f;
+		vertexBuffer[vertex++] = way->rightSideVertexes[i].z;
+		textureBuffer[text++] = way->rightSideTexCoords[i].x;
+		textureBuffer[text++] = way->rightSideTexCoords[i].y;
+	}
+
+
 }
 
+void sceneGenerator::generateBuildingBuffers(Building *building, float *vertexBuffer, float *textureBuffer)
+{
+	float textureCoord = 0.0f;
+	float TEXTURESIZE = 8.0f;
+
+	for (int i = 0, text = 0, vertex = 0; i < building->nodes.size(); i++)
+	{
+		vertexBuffer[vertex++] = building->nodes[i].meterx;
+		vertexBuffer[vertex++] = building->nodes[i].height;
+		vertexBuffer[vertex++] = building->nodes[i].meterz;
+		textureBuffer[text++] = textureCoord;
+		textureBuffer[text++] = 0.0f;
+
+		vertexBuffer[vertex++] = building->nodes[i].meterx;
+		vertexBuffer[vertex++] = building->BuildingTopHeight;
+		vertexBuffer[vertex++] = building->nodes[i].meterz;
+		textureBuffer[text++] = textureCoord;
+		textureBuffer[text++] = 1.0f;
+
+		if (i != building->nodes.size() - 1)
+		{
+			Tuple t1(building->nodes[i].meterx, building->nodes[i].meterz);
+			Tuple t2(building->nodes[i + 1].meterx, building->nodes[i + 1].meterz);
+			textureCoord += ((t1 - t2).length() / TEXTURESIZE);
+		}
+	}
+
+
+
+}

@@ -23,7 +23,7 @@ private:
 
 	void drawBuildings();
 	void drawBuildings2();
-	void drawHighways();
+
 	void drawWays();
 	void drawTrees();
 	void drawTerrain();
@@ -41,7 +41,14 @@ private:
 
 	void Draw3DWay(HighWay *way, GLuint texture, float layerheight); //LayerHeight : How high it should be compared to other road types for intersection
 	void drawHighways2();
+	void drawHighways();
 
+
+	void generateHighwayVBO();
+	void drawHighwayVBO();
+
+	void generateBuildingVBO();
+	void drawBuildingVBO();
 
 	Triple cameraPos;
 	Triple lookatPos;
