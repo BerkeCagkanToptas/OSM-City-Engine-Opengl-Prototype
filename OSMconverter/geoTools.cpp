@@ -79,7 +79,7 @@ void TerrainLoader::loadheightmap(char* filename)
 
 				heightmap[i][j] = convertLittleEndian(tmp);
 				if (heightmap[i][j] < -1000)
-					heightmap[i][j] = heightmap[i - 1][j];
+					heightmap[i][j] = heightmap[i][j-1];
 				
 			}
 		}

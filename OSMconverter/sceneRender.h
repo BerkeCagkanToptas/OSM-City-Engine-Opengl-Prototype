@@ -8,6 +8,7 @@ class sceneRender
 
 
 public:
+	     sceneRender();
 		 sceneRender(char* xmlFile, char* geoFile);
 	void initScene();
 	void display();
@@ -21,8 +22,7 @@ public:
 
 private:
 
-	void drawBuildings();
-	void drawBuildings2();
+
 
 	void drawWays();
 	void drawTrees();
@@ -35,14 +35,15 @@ private:
 	GLuint tessellateAmenity(vector<Way> *wayList);
 	GLuint tessellateArea(vector<Way> *wayList);
 
-	GLuint tessellateHighway(HighWay *way, GLuint texture, float layerheight);
-	void generateHighwayList();
-
-
 	void Draw3DWay(HighWay *way, GLuint texture, float layerheight); //LayerHeight : How high it should be compared to other road types for intersection
-	void drawHighways2();
 	void drawHighways();
+	void drawBuildings();
+	void drawBuildings2();
 
+	void drawDebugMode();
+
+	void generateTerrainVBO();
+	void drawTerrainVBO();
 
 	void generateHighwayVBO();
 	void drawHighwayVBO();

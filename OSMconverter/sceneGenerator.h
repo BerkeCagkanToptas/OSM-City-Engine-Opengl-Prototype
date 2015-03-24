@@ -7,6 +7,7 @@ struct NEWbuilding
 {
 	int id;
 	double BuildingHeight;
+	double BuildingTopHeight; // To Equalize Top surface of building
 	int TextureID;
 	Way outerWall;
 	vector<Way> innerWalls;
