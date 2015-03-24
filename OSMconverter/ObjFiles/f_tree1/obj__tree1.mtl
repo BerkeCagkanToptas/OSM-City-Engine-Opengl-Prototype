@@ -1,0 +1,14 @@
+# Wavefront MTL file
+# Creator: Ultimate Unwrap3D v2.24
+# Time: Fri Dec 30 09:41:18 2005
+# num_materials: 1
+newmtl tree1.tga
+Ka 0.000000 0.000000 0.000000
+Kd 0.752941 0.752941 0.752941
+Ks 0.000000 0.000000 0.000000
+d 1.000000
+illum 2
+Ns 0.312500
+map_Kd tree1.tga
+
+# num_materials: 1

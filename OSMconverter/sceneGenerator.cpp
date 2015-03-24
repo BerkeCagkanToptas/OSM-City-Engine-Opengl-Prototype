@@ -19,14 +19,19 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	cout << "number of highway  is :" << parser.highWayList.size() << endl;
 
 	generateTerrain();
-	updateBuildingInfo(); //should be in front of updatebuildingheights()
+	generateBuildingList();
+	generate3DRoads();
+
+
+
 	updateBuildingHeights();
+	updateBuildingInfo(); //should be at updatebuildingheights()
+
 	updateWayHeights();
 
 	fillTreeTable();
 
-	generateBuildingList();
-	generate3DRoads();
+
 	
 
 }
@@ -46,6 +51,31 @@ void sceneGenerator::updateBuildingHeights()
 		}
 		parser.buildingList[i].BuildingTopHeight = maxHeight + parser.buildingList[i].BuildingHeight;
 	}
+
+	for (int i = 0; i < (int)buildingListNEW.size(); i++)
+	{
+		double maxHeight = 0;
+
+		for (int j = 0; j < (int)buildingListNEW[i].outerWall.nodes.size(); j++)
+		{
+			buildingListNEW[i].outerWall.nodes[j].height = terrainLoader.getTerrainHeight(buildingListNEW[i].outerWall.nodes[j].lat, buildingListNEW[i].outerWall.nodes[j].lon);
+			if (buildingListNEW[i].outerWall.nodes[j].height > maxHeight)
+				maxHeight = buildingListNEW[i].outerWall.nodes[j].height;
+		}
+		for (int j = 0; j < (int)buildingListNEW[i].innerWalls.size(); j++)
+		{
+			for (int k = 0; k < (int)buildingListNEW[i].innerWalls[j].nodes.size(); k++)
+			{
+				buildingListNEW[i].innerWalls[j].nodes[k].height = terrainLoader.getTerrainHeight(buildingListNEW[i].innerWalls[j].nodes[k].lat, buildingListNEW[i].innerWalls[j].nodes[k].lon);
+				if (buildingListNEW[i].innerWalls[j].nodes[k].height > maxHeight)
+					maxHeight = buildingListNEW[i].innerWalls[j].nodes[k].height;
+			}
+
+		}
+
+		buildingListNEW[i].BuildingTopHeight = maxHeight + buildingListNEW[i].BuildingHeight;
+	}
+
 }
 
 void sceneGenerator::updateWayHeights()
@@ -168,21 +198,19 @@ void sceneGenerator::updateBuildingInfo()
 			//IF BUILDING IS A KIOSK TYPE
 			if (0 == wcscmp(parser.buildingList[i].tags[j].k, L"shop") && 0 == wcscmp(parser.buildingList[i].tags[j].v, L"kiosk"))
 			{
-				parser.buildingList[i].BuildingTopHeight = 0.25 * Buildingheight;
+				parser.buildingList[i].BuildingTopHeight -= 0.75 * Buildingheight;
 				parser.buildingList[i].TextureID = 4;
 				break;
 			}
 
 			// IF BUILDING IS A TOWER
-			for (int j = 0; j < (int)parser.buildingList[i].tags.size(); j++)
+			if (0 == wcscmp(parser.buildingList[i].tags[j].k, L"man_made") && 0 == wcscmp(parser.buildingList[i].tags[j].v, L"tower"))
 			{
-				if (0 == wcscmp(parser.buildingList[i].tags[j].k, L"man_made") && 0 == wcscmp(parser.buildingList[i].tags[j].v, L"tower"))
-				{
-					parser.buildingList[i].BuildingHeight = 1.4 * Buildingheight;
-					parser.buildingList[i].TextureID = 5;
-					break;
-				}
+				parser.buildingList[i].BuildingTopHeight += Buildingheight * 0.5;
+				parser.buildingList[i].TextureID = 5;
+				break;
 			}
+			
 		}
 
 	}
@@ -195,7 +223,7 @@ void sceneGenerator::updateBuildingInfo()
 		{
 			if (0 == wcscmp(buildingListNEW[i].tags[j].k, L"man_made") && 0 == wcscmp(buildingListNEW[i].tags[j].v, L"tower"))
 			{
-				buildingListNEW[i].BuildingHeight = Buildingheight * 1.3;
+				buildingListNEW[i].BuildingTopHeight += Buildingheight * 0.5;
 				buildingListNEW[i].TextureID = 5;
 				break;
 			}
@@ -216,6 +244,9 @@ void sceneGenerator::fillTreeTable()
 				Trees.push_back(parser.nodeList[i]);
 		}
 	}
+
+	for (int i = 0; i < Trees.size(); i++)
+		Trees[i].height = terrainLoader.getTerrainHeight(Trees[i].lat,Trees[i].lon);
 }
 
 
