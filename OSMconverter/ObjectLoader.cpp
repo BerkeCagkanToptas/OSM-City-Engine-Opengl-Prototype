@@ -39,7 +39,7 @@ bool ObjectLoader::ImportObject(const std::string folderPath, const std::string 
 	// Now we can access the file's contents.
 	cout << "Import of scene " << fileName << " succeeded." << endl;
 
-	if (!LoadGLTextures(scene))
+	if (LoadGLTextures(scene) < 0)
 	{
 		cout << "Could not load Textures" << endl;
 		return false;
@@ -51,13 +51,10 @@ bool ObjectLoader::ImportObject(const std::string folderPath, const std::string 
 
 }
 
-GLuint ObjectLoader::generateObjectVBO()
-{
 
 
 
-	return 0;
-}
+
 
 void ObjectLoader::recursive_render(const struct aiScene *sc, const struct aiNode* nd, float scale)
 {
@@ -99,7 +96,6 @@ void ObjectLoader::recursive_render(const struct aiScene *sc, const struct aiNod
 		}
 
 
-
 		for (t = 0; t < mesh->mNumFaces; ++t) {
 			const struct aiFace* face = &mesh->mFaces[t];
 			GLenum face_mode;
@@ -123,7 +119,8 @@ void ObjectLoader::recursive_render(const struct aiScene *sc, const struct aiNod
 
 				if (mesh->HasTextureCoords(0))		//HasTextureCoords(texture_coordinates_set)
 				{
-					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, 1 - mesh->mTextureCoords[0][vertexIndex].y); //mTextureCoords[channel][vertex]
+					glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, mesh->mTextureCoords[0][vertexIndex].y);
+					//glTexCoord2f(mesh->mTextureCoords[0][vertexIndex].x, 1 - mesh->mTextureCoords[0][vertexIndex].y); //mTextureCoords[channel][vertex]
 				}
 
 				glNormal3fv(&mesh->mNormals[vertexIndex].x);
@@ -149,7 +146,6 @@ void ObjectLoader::recursive_render(const struct aiScene *sc, const struct aiNod
 
 
 }
-
 
 void ObjectLoader::apply_material(const aiMaterial *mtl)
 {
@@ -222,13 +218,14 @@ void ObjectLoader::apply_material(const aiMaterial *mtl)
 		glDisable(GL_CULL_FACE);
 }
 
-
 void ObjectLoader::drawObject()
 {
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 	recursive_render(scene, scene->mRootNode, 0.5);
+	glDisable(GL_BLEND);
 	glDisable(GL_LIGHTING);
 }
-
 
 int ObjectLoader::LoadGLTextures(const aiScene* scene)
 {
@@ -301,8 +298,9 @@ int ObjectLoader::LoadGLTextures(const aiScene* scene)
 	delete[] imageIds;
 	delete[] textureIds;
 
-	//return success;
+	return success;
 	return true;
 }
+
 
 
