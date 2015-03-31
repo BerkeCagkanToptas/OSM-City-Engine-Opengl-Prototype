@@ -216,8 +216,8 @@ public:
 			return false;
 		}
 
-		float x = (B2*C1 - B1*C2) / delta;
-		float y = (A1*C2 - A2*C1) / delta;
+		float x = float((B2*C1 - B1*C2) / delta);
+		float y = float((A1*C2 - A2*C1) / delta);
 
 		if (min(p0.x, p1.x) <= x && max(p0.x, p1.x) >= x && min(p0.y, p1.y) <= y && max(p0.y, p1.y) >= y &&			
 			min(p2.x, p3.x) <= x && max(p2.x, p3.x) >= x && min(p2.y, p3.y) <= y && max(p2.y, p3.y) >= y)
@@ -251,8 +251,8 @@ public:
 			return false;
 		}
 
-		float x = (B2*C1 - B1*C2) / delta;
-		float y = (A1*C2 - A2*C1) / delta;
+		float x = float((B2*C1 - B1*C2) / delta);
+		float y = float((A1*C2 - A2*C1) / delta);
 
 		intersection->x = x;
 		intersection->y = y;
