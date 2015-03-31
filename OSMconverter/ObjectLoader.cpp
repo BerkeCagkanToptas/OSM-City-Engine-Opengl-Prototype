@@ -52,10 +52,6 @@ bool ObjectLoader::ImportObject(const std::string folderPath, const std::string 
 }
 
 
-
-
-
-
 void ObjectLoader::recursive_render(const struct aiScene *sc, const struct aiNode* nd, float scale)
 {
 	unsigned int i;
