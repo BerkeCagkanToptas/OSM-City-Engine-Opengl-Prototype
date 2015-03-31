@@ -19,6 +19,12 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	cout << "number of highway  is :" << parser.highWayList.size() << endl;
 
 	generateTerrain();
+
+	cout << "Downloading Aerials" << endl;
+	AerialImageLoader loader;
+	loader.downloadAerials(&terrain, &terrainLoader.heightMapInfo);
+	cout << "Successfully Downloaded" << endl;
+
 	generateBuildingList();
 	generate3DRoads();
 
@@ -30,10 +36,6 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	updateWayHeights();
 
 	fillTreeTable();
-
-
-	
-
 }
 
 void sceneGenerator::updateBuildingHeights()
@@ -93,21 +95,30 @@ void sceneGenerator::generateTerrain()
 {
 	MercatorProjection proj;
 
-	//For bottom :
-	double ratioX = (terrainLoader.heightMapInfo.coordmax.meterx - parser.bbox.meterBottom) / terrainLoader.heightMapInfo.height;
-	int BottomIndex = (int)ceil(1200 * ratioX);
-
+	//For bottom
+	double ratioX = terrainLoader.heightMapInfo.Lat + 1 - parser.bbox.bottom;
+	int  BottomIndex = (int)ceil(1200 * ratioX);
 	double shiftX = (1200 * ratioX - BottomIndex) * terrainLoader.heightMapInfo.sizeX;
+
+	//For Top :
+	ratioX = terrainLoader.heightMapInfo.Lat + 1 - parser.bbox.top;
+	int TopIndex = (int)floor(1200 * ratioX);
+
+	
+	//For bottom : [ERRORNEUS CALCULATION]
+	//double ratioX = (terrainLoader.heightMapInfo.coordmax.meterx - parser.bbox.meterBottom) / terrainLoader.heightMapInfo.height;	
+	//int BottomIndex = (int)ceil(1200 * ratioX);
+	//double shiftX = (1200 * ratioX - BottomIndex) * terrainLoader.heightMapInfo.sizeX;
+
+	//For top : [ERRORNEUS CALCULATION]
+	//ratioX = (terrainLoader.heightMapInfo.coordmax.meterx - parser.bbox.meterTop) / terrainLoader.heightMapInfo.height;
+	//int TopIndex = (int)floor(1200 * ratioX);
+
 
 	//For Left :
 	double ratioZ = (parser.bbox.meterLeft - terrainLoader.heightMapInfo.coordmin.meterz) / terrainLoader.heightMapInfo.width;
 	int LeftIndex = (int)floor(1200*ratioZ);
-
 	double shiftZ = (LeftIndex - 1200*ratioZ) * terrainLoader.heightMapInfo.sizeZ;
-
-	//For top :
-	ratioX = (terrainLoader.heightMapInfo.coordmax.meterx - parser.bbox.meterTop) / terrainLoader.heightMapInfo.height;
-	int TopIndex = (int)floor(1200 * ratioX);
 
 	//For Right:
 	ratioZ = (parser.bbox.meterRight - terrainLoader.heightMapInfo.coordmin.meterz) / terrainLoader.heightMapInfo.width;
@@ -391,7 +402,7 @@ void sceneGenerator::fillTreeTable()
 
 void sceneGenerator::generate3DRoads()
 {
-	for (int i = 0; i < parser.highWayList.size(); i++)
+	for (int i = 0; i < (int)parser.highWayList.size(); i++)
 	{
 		generateInitial3Dway(&parser.highWayList[i]);
 		addIntersection1(&parser.highWayList[i]);
@@ -410,7 +421,7 @@ void sceneGenerator::generateTexCoords(HighWay *way)
 	//Start Point (i = 0)
 	way->leftSideTexCoords.push_back(Tuple(0.0f, 0.0f));
 	//Inter Points (1 <= i <= N)
-	for (int i = 0; i < way->leftSideVertexes.size()-1; i++)
+	for (int i = 0; i < (int)way->leftSideVertexes.size()-1; i++)
 	{
 		Triple fark = way->leftSideVertexes[i + 1] - way->leftSideVertexes[i];
 		roadPos += fark.Length();
@@ -453,7 +464,6 @@ void sceneGenerator::addIntersection1(HighWay *way)
 			Tuple pTop(terrain.BBox.meterTop, terrain.BBox.meterLeft + z * terrainLoader.heightMapInfo.sizeZ);
 			Tuple pBottom(terrain.BBox.meterBottom, terrain.BBox.meterLeft + z * terrainLoader.heightMapInfo.sizeZ);
 
-			//LEFT SIDE INTERSECTION
 			Tuple intersectleft;
 			Tuple intersectright;
 			bool isleft = geo.getLineIntersection(&intersectleft, pTop, pBottom, pointLeft1, pointLeft2);
