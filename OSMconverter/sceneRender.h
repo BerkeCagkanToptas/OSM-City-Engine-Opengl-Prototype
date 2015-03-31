@@ -28,8 +28,10 @@ private:
 	void drawTrees();
 	void drawTerrain();
 
+
 	void initSkybox();
 	void drawSkybox();
+
 	GLuint tessellateRoof(vector<Building> *buildingList);
 	GLuint tessellateRoof2();
 	GLuint tessellateAmenity(vector<Way> *wayList);
@@ -42,6 +44,7 @@ private:
 
 	void drawDebugMode();
 
+	void initTerrain(Terrain *terrain, HeightmapInfo *heightmapinfo);
 	void generateTerrainVBO();
 	void drawTerrainVBO();
 
@@ -57,6 +60,7 @@ private:
 
 	sceneGenerator scene;
 	BmpLoader bmploader;
+	GLuint **TerrainAerials;
 	GLuint Skybox[6];
 	GLuint roadUnclassifiedTexture;
 	GLuint roadResidualTexture;
