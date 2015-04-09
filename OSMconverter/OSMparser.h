@@ -6,21 +6,6 @@
 #include "gltools.h"
 #include <iostream>
 
-// Width of Different Road Types
-#define HighwayResidualSize 4.0f
-#define HighwayUnclassifiedSize 10.0f
-#define HighwayServiceSize 4.0f
-#define HighwayPrimarySize 10.0f
-#define HighwaySecondarySize 10.0f
-#define HighwayTertiarySize 8.0f
-#define HighwayPavementSize 2.0f
-#define HighwayFootwaySize 2.0f
-#define HighwayPathSize 3.0f
-#define RailwaySize 1.5f
-#define RiverSize 6.0f
-
-#define Buildingheight 25.0f
-
 using namespace std;
 
 #if _MSC_VER > 1000
@@ -123,16 +108,32 @@ struct Way
 struct Building
 {
 	BSTR id;
-	double BuildingHeight;
+	int floorNumber;
+	double floorHeight;
 	double BuildingTopHeight;
-	int TextureID;
+	GLuint TextureID;
 	vector<Node> nodes;
 	vector<Tag> tags;
 };
 
+struct Building2
+{
+	int id;
+	double floorHeight;
+	int floorNumber;
+	double BuildingTopHeight; // To Equalize Top surface of building
+	int TextureID;
+	Way outerWall;
+	vector<Way> innerWalls;
+	vector<Tag> tags;
+};
+
+
 struct HighWay
 {
 	BSTR id;
+	GLuint textureID;
+	string texturePath;
 	wayType type;
 	vector<Node> nodes;
 	vector<Tag> tags;
@@ -146,9 +147,6 @@ struct HighWay
 
 	vector<Triple> leftIntersections;
 	vector<Triple> rightIntersections;
-
-	float *vertexBuffer;
-	float *textureBuffer;
 
 };
 
@@ -169,6 +167,7 @@ public:
 	vector<Way> wayList;
 	vector<Relation> relationList;
 	vector<Building> buildingList;
+	vector<Building2> buildingList2;
 	vector<HighWay> highWayList; //Rivers + railways included
 
 	void parseOSM(char *szFileName);

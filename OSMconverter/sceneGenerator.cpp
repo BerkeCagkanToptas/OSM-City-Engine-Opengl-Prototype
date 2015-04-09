@@ -13,9 +13,15 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 
 	cout << "reading OSM file ..." << endl;
 	parser.parseOSM(XMLfile);
+	generateBuildingList2();
 	cout << "Succesfully read" << endl;
 
-	cout << "number of building is :" << parser.buildingList.size() + buildingListNEW.size() << endl;
+	cout << "reading Config file ..." << endl;
+	configparser.parseConfigFile("configurations.xml");
+	applyConfigurations();
+	cout << "Succesfully read" << endl;
+
+	cout << "number of building is :" << parser.buildingList.size() + parser.buildingList2.size() << endl;
 	cout << "number of highway  is :" << parser.highWayList.size() << endl;
 
 	generateTerrain();
@@ -25,17 +31,14 @@ void sceneGenerator::init(char* XMLfile, char* GEOfile)
 	loader.downloadAerials(&terrain, &terrainLoader.heightMapInfo);
 	cout << "Successfully Downloaded" << endl;
 
-	generateBuildingList();
 	generate3DRoads();
-
-
-
+	generateTreeTable();
+	
+	updateBuildingInfo();
 	updateBuildingHeights();
-	updateBuildingInfo(); //should be at updatebuildingheights()
-
 	updateWayHeights();
 
-	fillTreeTable();
+
 }
 
 void sceneGenerator::updateBuildingHeights()
@@ -51,31 +54,31 @@ void sceneGenerator::updateBuildingHeights()
 			if (parser.buildingList[i].nodes[j].height > maxHeight)
 				maxHeight = parser.buildingList[i].nodes[j].height;
 		}
-		parser.buildingList[i].BuildingTopHeight = maxHeight + parser.buildingList[i].BuildingHeight;
+		parser.buildingList[i].BuildingTopHeight = maxHeight + parser.buildingList[i].floorHeight * parser.buildingList[i].floorNumber;
 	}
 
-	for (int i = 0; i < (int)buildingListNEW.size(); i++)
+	for (int i = 0; i < (int)parser.buildingList2.size(); i++)
 	{
 		double maxHeight = 0;
 
-		for (int j = 0; j < (int)buildingListNEW[i].outerWall.nodes.size(); j++)
+		for (int j = 0; j < (int)parser.buildingList2[i].outerWall.nodes.size(); j++)
 		{
-			buildingListNEW[i].outerWall.nodes[j].height = terrainLoader.getTerrainHeight(buildingListNEW[i].outerWall.nodes[j].lat, buildingListNEW[i].outerWall.nodes[j].lon);
-			if (buildingListNEW[i].outerWall.nodes[j].height > maxHeight)
-				maxHeight = buildingListNEW[i].outerWall.nodes[j].height;
+			parser.buildingList2[i].outerWall.nodes[j].height = terrainLoader.getTerrainHeight(parser.buildingList2[i].outerWall.nodes[j].lat, parser.buildingList2[i].outerWall.nodes[j].lon);
+			if (parser.buildingList2[i].outerWall.nodes[j].height > maxHeight)
+				maxHeight = parser.buildingList2[i].outerWall.nodes[j].height;
 		}
-		for (int j = 0; j < (int)buildingListNEW[i].innerWalls.size(); j++)
+		for (int j = 0; j < (int)parser.buildingList2[i].innerWalls.size(); j++)
 		{
-			for (int k = 0; k < (int)buildingListNEW[i].innerWalls[j].nodes.size(); k++)
+			for (int k = 0; k < (int)parser.buildingList2[i].innerWalls[j].nodes.size(); k++)
 			{
-				buildingListNEW[i].innerWalls[j].nodes[k].height = terrainLoader.getTerrainHeight(buildingListNEW[i].innerWalls[j].nodes[k].lat, buildingListNEW[i].innerWalls[j].nodes[k].lon);
-				if (buildingListNEW[i].innerWalls[j].nodes[k].height > maxHeight)
-					maxHeight = buildingListNEW[i].innerWalls[j].nodes[k].height;
+				parser.buildingList2[i].innerWalls[j].nodes[k].height = terrainLoader.getTerrainHeight(parser.buildingList2[i].innerWalls[j].nodes[k].lat, parser.buildingList2[i].innerWalls[j].nodes[k].lon);
+				if (parser.buildingList2[i].innerWalls[j].nodes[k].height > maxHeight)
+					maxHeight = parser.buildingList2[i].innerWalls[j].nodes[k].height;
 			}
 
 		}
 
-		buildingListNEW[i].BuildingTopHeight = maxHeight + buildingListNEW[i].BuildingHeight;
+		parser.buildingList2[i].BuildingTopHeight = maxHeight + parser.buildingList2[i].floorHeight * parser.buildingList2[i].floorNumber;
 	}
 
 }
@@ -138,31 +141,29 @@ void sceneGenerator::generateTerrain()
 
 }
 
-void sceneGenerator::generateBuildingList()
+void sceneGenerator::generateBuildingList2()
 {
 	int buildingID = 1;
 	for (int i = 0; i < (int)parser.relationList.size(); i++)
 	{
 		bool isbuilding = false;
-		NEWbuilding newBuilding;
+		Building2 newBuilding;
 
 		for (int j = 0; j < (int)parser.relationList[i].tags.size(); j++)
 		{
 			if (0 == wcscmp(parser.relationList[i].tags[j].k, L"building"))
 			{
 				newBuilding.id = buildingID++;
-				newBuilding.TextureID = rand() % 3 + 1;
-				newBuilding.BuildingHeight = Buildingheight;
+				newBuilding.TextureID = rand() % 3 + 1;			
 				isbuilding = true;
 
 				for (int k = 0; k < (int)parser.relationList[i].tags.size(); k++)
 				{
 					newBuilding.tags.push_back(parser.relationList[i].tags[k]);
 					if (0 == wcscmp(parser.relationList[i].tags[k].k, L"building:levels"))
-						newBuilding.BuildingHeight = _wtoi(parser.relationList[i].tags[k].v) * (Buildingheight / 4);
+						newBuilding.floorNumber = _wtoi(parser.relationList[i].tags[k].v);
 				}
 			
-
 				break;
 			}
 		}
@@ -192,7 +193,7 @@ void sceneGenerator::generateBuildingList()
 		}
 
 		if (!duplicateFlag)
-			buildingListNEW.push_back(newBuilding);
+			parser.buildingList2.push_back(newBuilding);
 	}
 
 
@@ -209,7 +210,7 @@ void sceneGenerator::updateBuildingInfo()
 			//IF BUILDING IS A KIOSK TYPE
 			if (0 == wcscmp(parser.buildingList[i].tags[j].k, L"shop") && 0 == wcscmp(parser.buildingList[i].tags[j].v, L"kiosk"))
 			{
-				parser.buildingList[i].BuildingTopHeight -= 0.75 * Buildingheight;
+				parser.buildingList[i].floorNumber = 1;
 				parser.buildingList[i].TextureID = 4;
 				break;
 			}
@@ -217,7 +218,7 @@ void sceneGenerator::updateBuildingInfo()
 			// IF BUILDING IS A TOWER
 			if (0 == wcscmp(parser.buildingList[i].tags[j].k, L"man_made") && 0 == wcscmp(parser.buildingList[i].tags[j].v, L"tower"))
 			{
-				parser.buildingList[i].BuildingTopHeight += Buildingheight * 0.5;
+				parser.buildingList[i].floorNumber = 6;
 				parser.buildingList[i].TextureID = 5;
 				break;
 			}
@@ -227,15 +228,15 @@ void sceneGenerator::updateBuildingInfo()
 	}
 
 	//Building List come from RELATION
-	for (int i = 0; i < (int)buildingListNEW.size(); i++)
+	for (int i = 0; i < (int)parser.buildingList2.size(); i++)
 	{
 		// IF BUILDING IS A TOWER
-		for (int j = 0; j < (int)buildingListNEW[i].tags.size(); j++)
+		for (int j = 0; j < (int)parser.buildingList2[i].tags.size(); j++)
 		{
-			if (0 == wcscmp(buildingListNEW[i].tags[j].k, L"man_made") && 0 == wcscmp(buildingListNEW[i].tags[j].v, L"tower"))
+			if (0 == wcscmp(parser.buildingList2[i].tags[j].k, L"man_made") && 0 == wcscmp(parser.buildingList2[i].tags[j].v, L"tower"))
 			{
-				buildingListNEW[i].BuildingTopHeight += Buildingheight * 0.5;
-				buildingListNEW[i].TextureID = 5;
+				parser.buildingList2[i].floorNumber = 6;
+				parser.buildingList2[i].TextureID = 5;
 				break;
 			}
 		}
@@ -245,7 +246,7 @@ void sceneGenerator::updateBuildingInfo()
 
 }
 
-void sceneGenerator::fillTreeTable()
+void sceneGenerator::generateTreeTable()
 {
 	for (int i = 0; i < (int)parser.nodeList.size(); i++)
 	{
@@ -258,6 +259,85 @@ void sceneGenerator::fillTreeTable()
 
 	for (int i = 0; i < Trees.size(); i++)
 		Trees[i].height = terrainLoader.getTerrainHeight(Trees[i].lat,Trees[i].lon);
+}
+
+void sceneGenerator::applyConfigurations()
+{
+	configParser::Configurations config = configparser.config;
+
+	//Highways
+	for (int i = 0; i < (int)parser.highWayList.size(); i++)
+	{
+		switch (parser.highWayList[i].type)
+		{
+			case wayType::highwayResidual :
+				parser.highWayList[i].size = config.residual.size;
+				parser.highWayList[i].texturePath = config.residual.texturepath;
+				break;
+			case wayType::highwayPedestrian:
+				parser.highWayList[i].size = config.pavament.size;
+				parser.highWayList[i].texturePath = config.pavament.texturepath;
+				break;
+			case wayType::highwayService :
+				parser.highWayList[i].size = config.service.size;
+				parser.highWayList[i].texturePath = config.service.texturepath;
+				break;
+			case wayType::highwayPrimary :
+				parser.highWayList[i].size = config.primary.size;
+				parser.highWayList[i].texturePath = config.primary.texturepath;
+				break;
+			case wayType::highwaySecondary :
+				parser.highWayList[i].size = config.secondary.size;
+				parser.highWayList[i].texturePath = config.secondary.texturepath;
+				break;
+			case wayType::highwayTertiary :
+				parser.highWayList[i].size = config.tertiary.size;
+				parser.highWayList[i].texturePath = config.tertiary.texturepath;
+				break;
+			case wayType::highwayPath :
+				parser.highWayList[i].size = config.path.size;
+				parser.highWayList[i].texturePath = config.path.texturepath;
+				break;
+			case wayType::highwayFootway :
+				parser.highWayList[i].size = config.footway.size;
+				parser.highWayList[i].texturePath = config.footway.texturepath;
+				break;
+			case wayType::highwayUnclassified :
+				parser.highWayList[i].size = config.unclassified.size;
+				parser.highWayList[i].texturePath = config.unclassified.texturepath;
+				break;
+			case wayType::river :
+				parser.highWayList[i].size = config.river.size;
+				parser.highWayList[i].texturePath = config.river.texturepath;
+				break;
+			case wayType::railway :
+				parser.highWayList[i].size = config.railway.size;
+				parser.highWayList[i].texturePath = config.railway.texturepath;
+				break;
+
+			default :
+				break;
+		}
+	}
+
+	//Building
+	for (int i = 0; i < (int)parser.buildingList.size(); i++)
+	{
+			parser.buildingList[i].floorHeight = config.building.floorheight;
+	
+			if (parser.buildingList[i].floorNumber <= 0)
+				parser.buildingList[i].floorNumber = config.building.floornumber;
+	}
+
+	for (int i = 0; i < (int)parser.buildingList2.size(); i++)
+	{
+			parser.buildingList2[i].floorHeight = config.building.floorheight;
+
+			if (parser.buildingList2[i].floorNumber <= 0)
+				parser.buildingList2[i].floorNumber = config.building.floornumber;
+	}
+
+
 }
 
 
@@ -716,7 +796,7 @@ void sceneGenerator::addIntersection3(HighWay *way)
 	}
 }
 
-//17 Mart Version 3 (For Triangle Terrain)
+
 //This will be used for generating initial vertexes
 void sceneGenerator::generateInitial3Dway(HighWay *way)
 {
@@ -875,7 +955,6 @@ void sceneGenerator::generateHighwayBuffers(HighWay *way, float *vertexBuffer, f
 
 
 }
-
 void sceneGenerator::generateBuildingBuffers(Building *building, float *vertexBuffer, float *textureBuffer)
 {
 	float textureCoord = 0.0f;

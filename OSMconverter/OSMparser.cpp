@@ -354,7 +354,6 @@ void OSMparser::readWayType(MSXML2::IXMLDOMNode* node)
 		}
 		for (int i = 0; i < newWay.tags.size(); i++)
 			building.tags.push_back(newWay.tags[i]);
-		building.BuildingHeight = Buildingheight;
 
 		building.TextureID = rand() % 3 + 1;
 		buildingList.push_back(building);
@@ -372,44 +371,6 @@ void OSMparser::readWayType(MSXML2::IXMLDOMNode* node)
 	case wayType::river:
 	case wayType::railway:
 		highway.type = newWay.type;
-		switch (highway.type)
-		{
-
-		case wayType::highwayResidual:
-			highway.size = HighwayResidualSize;
-			break;
-		case wayType::highwayUnclassified:
-			highway.size = HighwayUnclassifiedSize;
-			break;
-		case wayType::highwayService:
-			highway.size = HighwayServiceSize;
-			break;
-		case wayType::highwayPrimary:
-			highway.size = HighwayPrimarySize;
-			break;
-		case wayType::highwaySecondary:
-			highway.size = HighwaySecondarySize;
-			break;
-		case wayType::highwayTertiary:
-			highway.size = HighwayTertiarySize;
-			break;
-		case wayType::highwayPedestrian:
-			highway.size = HighwayPavementSize;
-			break;
-		case wayType::highwayFootway:
-			highway.size = HighwayFootwaySize;
-			break;
-		case wayType::highwayPath:
-			highway.size = HighwayPathSize;
-			break;
-		case wayType::railway:
-			highway.size = RailwaySize;
-			break;
-		case wayType::river:
-			highway.size = RiverSize;
-			break;
-		}
-
 		highway.id = newWay.id;	
 		for (int i = 0; i < newWay.nodes.size(); i++)
 			highway.nodes.push_back(newWay.nodes[i]);

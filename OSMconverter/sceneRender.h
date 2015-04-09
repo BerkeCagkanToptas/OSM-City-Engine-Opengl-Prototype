@@ -59,7 +59,7 @@ private:
 
 
 	sceneGenerator scene;
-	BmpLoader bmploader;
+	TextureLoader textureLoader;
 	GLuint **TerrainAerials;
 	GLuint Skybox[6];
 	GLuint roadUnclassifiedTexture;
