@@ -5,6 +5,9 @@
 #include <time.h>
 #include <vector>
 #include <algorithm>
+#include <string.h>
+#include <map>
+#include <IL\il.h>
 
 using namespace std;
 
@@ -186,11 +189,23 @@ private:
 	GLfloat GLabs(GLfloat x, GLfloat y);
 };
 
-class BmpLoader
+class TextureLoader
 {
 public:
-	unsigned char* bmpRead(const char* filename, int* width, int* height);
+
+	//Load textures from file using DevIL library.
+	GLuint LoadTexture(const char* filename);
+
+	//[DEPRECATED] BMP image loader
 	int LoadGLTexturesBMP(const char* filename);
+
+private:
+
+	typedef std::map<std::string, GLuint> TextureMap;	
+	unsigned char* bmpRead(const char* filename, int* width, int* height);
+	
+
+
 };
 
 class Geometry
@@ -260,7 +275,6 @@ public:
 	}
 
 };
-
 
 class Shader
 {

@@ -282,7 +282,7 @@ void fps::printw(float x, float y, float z, char* format, ...)
 
 
 //----------------- <BMPLOADER>------------------------------------------------------
-unsigned char* BmpLoader::bmpRead(const char* filename, int* width, int* height)
+unsigned char* TextureLoader::bmpRead(const char* filename, int* width, int* height)
 {
 	unsigned char* image;
 
@@ -336,7 +336,7 @@ unsigned char* BmpLoader::bmpRead(const char* filename, int* width, int* height)
 
 	return image;
 }
-int BmpLoader::LoadGLTexturesBMP(const char* filename)
+int TextureLoader::LoadGLTexturesBMP(const char* filename)
 {
 	GLuint texture;
 	unsigned char * data;
@@ -364,6 +364,48 @@ int BmpLoader::LoadGLTexturesBMP(const char* filename)
 
 	return texture; //return whether it was successfull
 }
+
+GLuint TextureLoader::LoadTexture(const char* filename)
+{
+	GLuint textureID;
+
+	ILboolean success;
+	ilInit();
+
+	ILuint image;
+
+	ilGenImages(1, &image);
+	ilBindImage(image);
+
+	ilEnable(IL_ORIGIN_SET);
+	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+	success = ilLoadImage((ILstring)filename);
+
+	if (success)
+	{
+		ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+		/* Create and load textures to OpenGL */
+		glGenTextures(1, &textureID);
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ilGetInteger(IL_IMAGE_WIDTH),
+			ilGetInteger(IL_IMAGE_HEIGHT), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+			ilGetData());
+	}
+	else
+		printf("Couldn't load Image: %s\n", filename);
+
+	ilBindImage(0);
+	ilDeleteImage(image);
+
+	return textureID;
+
+}
+
+
 //----------------- </BMPLOADER>------------------------------------------------------
 
 
